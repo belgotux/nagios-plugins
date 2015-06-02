@@ -3,15 +3,18 @@
 #
 #  Author: Hari Sekhon
 #  Date: 2012-06-13 10:52:43 +0100 (Wed, 13 Jun 2012)
+#  
+#  Edit by Belgotux www.monlinux.net : patch to work with TAP openvpn and fix username
+#  Date: 2015-06-02
 #
-#  http://github.com/harisekhon/nagios-plugins
+#  http://github.com/harisekhon
 #
 #  License: see accompanying LICENSE file
 #
 
 $DESCRIPTION = "Nagios Plugin to show OpenVPN stats by parsing the status log";
 
-$VERSION = "0.3";
+$VERSION = "0.3.1";
 
 use strict;
 use warnings;
@@ -26,9 +29,10 @@ my $DEFAULT_MAX_AGE = 60;
 my $max_age = $DEFAULT_MAX_AGE;
 my $status_log;
 my %openvpn_users;
-my $user_regex = '\\w+';
+my $user_regex = '[\\w+.]+';
 my $date_regex = '\w{3} \w{3} {1,2}\d{1,2} \d{1,2}:\d{2}:\d{2} \d{4}';
 my %stats;
+my $mac_regex = '([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})';
 
 # regex to skip
 my @skip_regex = (
@@ -71,6 +75,8 @@ while(<$fh>){
     chomp;
     if(/^($ip_regex),($user_regex),($ip_regex)(:?:\d+)?,$date_regex$/){
         @{$openvpn_users{$2}} = ($3 , $1);
+    } elsif(/^($mac_regex),($user_regex),($ip_regex)(:?:\d+)?,$date_regex$/){
+        @{$openvpn_users{$4}} = ($5 , $1);
     } elsif(/^Max bcast\/mcast queue length,(\d+)$/){
         $stats{"queue"} = $1;
     } elsif(/$skip_regex/){
